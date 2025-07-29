@@ -13,13 +13,13 @@ interface IToDoList {
   search: (text: string) => Task[];
 }
 
-class ToDOList implements IToDoList {
+class ToDoList implements IToDoList {
   private tasks: Task[] = [];
-  private taskId: number = 1;
+  private tasksId: number = 1;
 
   addTask(title: string): Task {
-    const newTask: Task = {
-      id: this.taskId++,
+    const newTask = {
+      id: this.tasksId++,
       title,
       isDone: false,
     };
@@ -32,21 +32,41 @@ class ToDOList implements IToDoList {
   }
 
   filter(fn: (task: Task) => boolean): Task[] {
-    return this.tasks.filter(fn);
+    let filteredList: Task[] = [];
+    for (let task of this.tasks) {
+      if (fn(task)) {
+        filteredList.push(task);
+      }
+    }
+    return filteredList;
   }
 
   deleteTask(id: number): void {
-    this.tasks = this.tasks.filter((task) => task.id !== id);
+    let newList: Task[] = [];
+    for (let task of this.tasks) {
+      if (task.id !== id) {
+        newList.push(task);
+      }
+    }
+    this.tasks = newList;
   }
 
   changeStatus(id: number, status: boolean): void {
-    const changeTask = this.tasks.find((task) => task.id === id);
-    if (changeTask) {
-      changeTask.isDone = status;
+    for (let task of this.tasks) {
+      if (task.id === id) {
+        task.isDone = status;
+        return;
+      }
     }
   }
 
   search(text: string): Task[] {
-    return this.tasks.filter((task) => task.title.includes(text));
+    let newList: Task[] = [];
+    for (let task of this.tasks) {
+      if (task.title.includes(text)) {
+        newList.push(task);
+      }
+    }
+    return newList;
   }
 }
