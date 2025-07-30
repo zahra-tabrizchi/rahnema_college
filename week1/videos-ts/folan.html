@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Number Doubler & Downloader</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light gray background */
+            color: #333;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8 lg:p-10 min-h-screen flex flex-col items-center justify-center">
+
+    <div class="bg-white p-6 sm:p-8 rounded-lg shadow-xl max-w-xl w-full">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">CSV Number Doubler</h1>
+
+        <!-- File Upload Section -->
+        <div class="mb-6 p-4 border border-gray-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+            <label for="csvFile" class="block text-lg font-medium text-gray-700">Upload CSV File:</label>
+            <input type="file" id="csvFile" accept=".csv" class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Message Box for alerts -->
+        <div id="messageBox" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-md relative mb-4" role="alert">
+            <span id="messageText" class="block sm:inline"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="document.getElementById('messageBox').classList.add('hidden');">
+                <svg class="fill-current h-6 w-6 text-blue-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+            </span>
+        </div>
+
+        <!-- Action Button -->
+        <div id="actionButtonContainer" class="flex justify-center">
+            <button id="processAndDownloadBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-md shadow-md transition duration-300 ease-in-out transform hover:scale-105 text-lg">
+                Process & Download Doubled CSV
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store CSV data
+        let csvData = [];
+        let headerRow = [];
+
+        // Get DOM elements
+        const csvFileInput = document.getElementById('csvFile');
+        const processAndDownloadBtn = document.getElementById('processAndDownloadBtn');
+        const actionButtonContainer = document.getElementById('actionButtonContainer');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+
+        // List of common Persian girls' names for random filename generation
+        // Filtered to include names with 5 to 6 characters
+        const persianNames = [
+            "Leila", "Shirin", "Parisa", "Mina", "Sara", "Zahra",
+            "Azadeh", "Bahareh", "Donya", "Elham", "Farnaz", "Ghazal", "Homa",
+            "Kimia", "Ladan", "Maryam", "Narges", "Pardis", "Roya", "Sepideh", "Taraneh",
+            "Arezoo", "Darya", "Elaheh", "Golnaz", "Hasti", "Kiana",
+            "Mahsa", "Neda", "Pegah", "Rana", "Sahar", "Sanaz", "Shabnam",
+            "Simin", "Sima", "Sogand", "Yasaman", "Ziba"
+        ].filter(name => name.length >= 5 && name.length <= 6); // Filter names by length
+
+        /**
+         * Shows a message in the message box.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of message (e.g., 'info', 'error', 'success').
+         */
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-red-100', 'bg-green-100', 'border-blue-400', 'border-red-400', 'border-green-400', 'text-blue-700', 'text-red-700', 'text-green-700');
+
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            } else {
+                messageBox.classList.add('bg-blue-100', 'border-blue-400', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
+
+        /**
+         * Parses a CSV string into an array of arrays.
+         * Handles quoted fields and commas within quotes.
+         * @param {string} text - The CSV string.
+         * @returns {Array<Array<string>>} - The parsed CSV data.
+         */
+        function parseCSV(text) {
+            const rows = text.split(/\r?\n/).filter(row => row.trim() !== ''); // Split by newline, filter empty rows
+            if (rows.length === 0) return [];
+
+            return rows.map(row => {
+                const result = [];
+                let inQuote = false;
+                let currentField = '';
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"') {
+                        // Handle escaped quotes: "" becomes "
+                        if (inQuote && row[i + 1] === '"') {
+                            currentField += '"';
+                            i++; // Skip the next quote
+                        } else {
+                            inQuote = !inQuote;
+                        }
+                    } else if (char === ',' && !inQuote) {
+                        result.push(currentField);
+                        currentField = '';
+                    } else {
+                        currentField += char;
+                    }
+                }
+                result.push(currentField); // Add the last field
+                return result;
+            });
+        }
+
+        /**
+         * Converts the current table data back into a CSV string.
+         * @returns {string} - The CSV string.
+         */
+        function convertToCSV() {
+            const escapeCSV = (value) => {
+                if (value === null || value === undefined) return '';
+                let stringValue = String(value);
+                // If the value contains a comma, double quote, or newline, enclose it in double quotes
+                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                    // Escape double quotes by doubling them
+                    stringValue = stringValue.replace(/"/g, '""');
+                    return `"${stringValue}"`;
+                }
+                return stringValue;
+            };
+
+            const headerCsv = headerRow.map(escapeCSV).join(',');
+            const dataCsv = csvData.map(row => row.map(escapeCSV).join(',')).join('\n');
+
+            return `${headerCsv}\n${dataCsv}`;
+        }
+
+        /**
+         * Generates a random Persian name for the filename, ensuring it's 5 or 6 characters long.
+         * @returns {string} - A random Persian name (5-6 characters).
+         */
+        function generateRandomPersianName() {
+            if (persianNames.length === 0) {
+                // Fallback if no names meet the criteria (shouldn't happen with current list)
+                return "output";
+            }
+            const randomIndex = Math.floor(Math.random() * persianNames.length);
+            return persianNames[randomIndex];
+        }
+
+        /**
+         * Multiplies every numerical value in the CSV data by 2 and then triggers a download.
+         */
+        function processAndDownload() {
+            if (csvData.length === 0 && headerRow.length === 0) {
+                showMessage('No data to process. Please upload a CSV file first.', 'error');
+                return;
+            }
+
+            let numbersProcessed = 0;
+
+            // Process header row (if it contains numbers)
+            headerRow = headerRow.map(cell => {
+                const num = parseFloat(cell);
+                if (!isNaN(num)) {
+                    numbersProcessed++;
+                    return (num * 2).toString();
+                }
+                return cell;
+            });
+
+            // Process data rows
+            csvData = csvData.map(row => {
+                return row.map(cell => {
+                    const num = parseFloat(cell);
+                    if (!isNaN(num)) {
+                        numbersProcessed++;
+                        return (num * 2).toString();
+                    }
+                    return cell;
+                });
+            });
+
+            // Trigger download
+            const csv = convertToCSV();
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) { // Feature detection for download attribute
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                // Generate a random Persian name for the filename
+                const randomFileName = generateRandomPersianName() + '.csv';
+                link.setAttribute('download', randomFileName);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessage(`Successfully processed and downloaded CSV as "${randomFileName}" with ${numbersProcessed} numbers doubled!`, 'success');
+            } else {
+                showMessage('Your browser does not support direct file downloads. Please try a different browser.', 'error');
+            }
+        }
+
+        // Event Listener for file input change
+        csvFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    const parsedData = parseCSV(text);
+
+                    if (parsedData.length > 0) {
+                        // Assume the first row is the header
+                        headerRow = parsedData[0];
+                        csvData = parsedData.slice(1);
+                        showMessage('CSV file loaded. Click "Process & Download" to double numbers.', 'info');
+                    } else {
+                        showMessage('Could not parse CSV file or it is empty.', 'error');
+                        clearState();
+                    }
+                };
+                reader.onerror = () => {
+                    showMessage('Error reading file.', 'error');
+                    clearState();
+                };
+                reader.readAsText(file);
+            } else {
+                clearState();
+            }
+        });
+
+        // Event listener for Process and Download button
+        processAndDownloadBtn.addEventListener('click', processAndDownload);
+
+        // Function to clear the editor state (only clears data, button remains visible)
+        function clearState() {
+            csvFileInput.value = ''; // Clear the file input
+            csvData = [];
+            headerRow = [];
+        }
+    </script>
+</body>
+</html>

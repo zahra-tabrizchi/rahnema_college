@@ -1,0 +1,29 @@
+POST http://localhost:3000/plan
+Content-Type: application/json
+Authorization: 4
+
+{
+  "title": "tehran",
+  "description": "autuban tehran-shomal"
+}
+
+###
+POST http://localhost:3000/plan
+Content-Type: application/json
+
+{
+  "title": "oromie",
+  "description": "rah be aras dare"
+}
+
+###
+GET http://localhost:3000/plan/1
+
+###
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
