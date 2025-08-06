@@ -1,53 +1,33 @@
-import { Router, Response } from "express";
-import { users, User } from "./user.route";
-import { isNonEmptyString } from "../utility/non-empty-string";
-import { HttpError } from "../utility/http-error";
+import { Router, Response, Request } from "express";
 import { handleExpress } from "../utility/handle-express";
-import { createPlan } from "../modules/plan/create-plan";
-import { getPlanById } from "../modules/plan/get-plan-by-id";
-import { createPlanDto, CreatePlanDto } from "../modules/plan/dto/create-plan.dto";
+import { createPlanDto } from "../modules/plan/dto/create-plan.dto";
 import z, { ZodError } from "zod";
-import { Program } from "./program.route";
 import { loginMiddleware } from "../utility/login.middleware";
-
-
-export interface Plan {
-    id: number,
-    title: string,
-    description : string,
-    deadLine: Date,
-    programs: Program[]
-}
-
-export const plans: Plan[] = []
+import { createProgramDto } from "../modules/plan/program/dto/create-program.dto";
+import { planService } from "../dependency";
 
 export const app = Router()
 
 app.post("/", loginMiddleware, (req, res) => {
     
-    try {
-        const dto = createPlanDto.parse(req.body);
-        handleExpress(res, () => createPlan(dto, req.user))
-    } catch (e) {
-        if(e instanceof ZodError) {
-            res.status(400).send({message: e.issues })
-        }
-    }
-     
+    const dto = createPlanDto.parse(req.body);
+    handleExpress(res, () => planService.createPlan(dto, req.user))
+})
+
+app.post("/:id/program", loginMiddleware, (req, res) => {
+    const dto = createProgramDto.parse({
+        ...req.body,
+        planId: req.params.id, 
+        });
+        handleExpress(res, () => planService.createProgram(dto, req.user))
 })
 
 app.get("/:id", (req, res)=> {
     
-    try {
-        const id = z.coerce.number().parse(req.params.id);
-        handleExpress(res, () => getPlanById(id))
-    } catch (e) {
-        if(e instanceof ZodError) {
-            res.status(400).send({message: e.issues })
-        }
-    }
-    
-    
+    const id = z.coerce.number().parse(req.params.id);
+    handleExpress(res, () => planService.getPlanById(id))
+   
+
 })
 
 

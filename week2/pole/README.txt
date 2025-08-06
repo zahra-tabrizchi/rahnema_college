@@ -36,3 +36,28 @@ yarn add -D @types/supertest
 
 //zod
 yarn add zod
+
+
+
+
+////typeOrm
+
+yarn add typeorm reflect-metadata
+
+//tsconfig
+
+"emitDecoratorMetadata": true,
+"experimentalDecorators": true,
+
+//install mysql
+yarn add mysql
+
+
+///starting mysql on my wsl!!!!
+sudo service mysql start
+
+sudo mysql -u root
+
+//code on mysql
+create database porsi
+

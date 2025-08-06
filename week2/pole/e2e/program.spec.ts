@@ -1,14 +1,25 @@
 import request from "supertest";
 import { app } from "../src/api"
 import { loginAdminTest, loginRepTest } from "./utility";
-import { programs } from "../src/routes/program.route";
-import { title } from "process";
 
 describe("Program", () => {
     
     describe("Create", () => {
         it("Should fail if we did not login", async() => {
-            await request(app).post("/program").expect(401);
+            const AdminUser = await loginAdminTest()
+
+            const today = new Date()
+            const tomorrow = new Date(today.setDate(today.getDate()+1))
+            const {body: plan} = await request(app)
+            .post("/plan")
+            .set({"authorization" : AdminUser.id})
+            .send({
+                title: "local Host",
+                description: "there is no place like",
+                deadline: tomorrow
+            })
+            .expect(200)
+            await request(app).post(`/plan/${plan.id}/program`).expect(401);
         })
 
         it("Should create a program", async()=> {
@@ -28,7 +39,7 @@ describe("Program", () => {
             .expect(200)
 
             const {body: program} = await request(app)
-            .post("/program")
+            .post(`/plan/${plan.id}/program`)
             .set({authorization : RepUser.id})
             .send({
                 planId: plan.id,
@@ -55,7 +66,7 @@ describe("Program", () => {
             .expect(200)
 
             const {body: program} = await request(app)
-            .post("/program")
+            .post(`/plan/${plan.id}/program`)
             .set({authorization : user.id})
             .send({
                 planId: plan.id,

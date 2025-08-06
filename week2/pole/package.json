@@ -5,7 +5,7 @@
   "scripts": {
     "start": "ts-node src/main.ts",
     "test:e2e": "NODE_ENV=TEST jest --testMatch **/e2e/**/*.spec.ts",
-    "test" : "NODE_ENV=TEST jest --testMatch **/src/**/*.spec.ts"
+    "test": "NODE_ENV=TEST jest --testMatch **/src/**/*.spec.ts"
   },
   "keywords": [],
   "author": "",
@@ -24,7 +24,10 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "mysql": "^2.18.1",
+    "reflect-metadata": "^0.2.2",
     "supertest": "^7.1.4",
+    "typeorm": "^0.3.25",
     "uuid": "^11.1.0",
     "zod": "^4.0.14"
   }

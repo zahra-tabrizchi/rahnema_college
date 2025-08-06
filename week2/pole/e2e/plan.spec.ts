@@ -79,6 +79,7 @@ describe("Plan", () => {
             })
             .expect(200)
 
+            
             const { body: resultPlan} = await request(app)
             .get("/plan/" + plan.id)
             .expect(200);

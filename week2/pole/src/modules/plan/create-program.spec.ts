@@ -1,10 +1,16 @@
-import { ForbiddenError, HttpError, NotFoundError } from "../../utility/http-error";
-import { canCreateProgram, createProgram } from "./create-program";
+import { ForbiddenError } from "../../utility/http-error";
+import { PlanService } from "./plan.service";
 
 describe("Create Program", () => {
+    let planService: PlanService
+
+    beforeEach(() => {
+        planService = new PlanService()
+    })
+
     it("should not create program if user is not representative", () => {
         expect(() => {
-            canCreateProgram(
+            planService.canCreateProgram(
                 { 
                     username: "foo", 
                     password: "bar", 
@@ -23,7 +29,7 @@ describe("Create Program", () => {
 
     it("should not create a program if user already have one", () => {
         expect(
-            canCreateProgram(
+            planService.canCreateProgram(
                 { 
                     username: "foo", 
                     password: "bar", 
@@ -44,7 +50,7 @@ describe("Create Program", () => {
         const today = new Date()
         const yesterday = new Date(today.setDate(today.getDate()-1))
         expect(
-            canCreateProgram(
+            planService.canCreateProgram(
                 { 
                     username: "foo", 
                     password: "bar", 
@@ -65,7 +71,7 @@ describe("Create Program", () => {
         const today = new Date()
         const tomorrow = new Date(today.setDate(today.getDate()+1))
         expect(
-            canCreateProgram(
+            planService.canCreateProgram(
                 { 
                     username: "foo", 
                     password: "bar", 
