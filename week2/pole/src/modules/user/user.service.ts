@@ -1,28 +1,25 @@
 import { HttpError } from "../../utility/http-error";
 import { LoginDto } from "./dto/login.dto";
+import { UserId } from "./model/user-id";
 import { UserRepository } from "./user.repository";
 
 export class UserService {
-    private userRepo : UserRepository
+  constructor(private userRepo: UserRepository) {}
 
-    constructor() {
-        this.userRepo = new UserRepository()
-    }
-
-    loginUserBy(dto: LoginDto) {
-        const loggedInUser = this.userRepo.userLogin(dto.username, dto.password)
-        if ( loggedInUser === undefined) {
-            throw new HttpError(401, "Invalid username or password")
-        }
-
-        return loggedInUser
-    }
-
-    getUserById(id: string) {
-    const user = this.userRepo.findById(id);
+  async login({ username, password }: LoginDto) {
+    const user = await this.userRepo.findByUsername(username);
     if (!user) {
-        throw new HttpError(401, "Unauthorized");
+      throw new HttpError(401, "Invalid username or password");
     }
+
+    if (user.password !== password) {
+      throw new HttpError(401, "Invalid username or password");
+    }
+
     return user;
-}
+  }
+
+  findById(userId: UserId) {
+    return this.userRepo.findById(userId);
+  }
 }

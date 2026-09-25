@@ -58,6 +58,24 @@ sudo service mysql start
 
 sudo mysql -u root
 
-//code on mysql
-create database porsi
+mysql -u root -p
+mysql -u zahra -p
 
+CREATE USER 'zahra'@'localhost' IDENTIFIED BY 'q';
+
+
+//code on mysql
+CREATE DATABASE porsi;
+
+//quick start typeorm
+npx typeorm init --name MyProject --database mysql
+
+
+//environment variables
+yarn add dotenv-flow
+
+
+//postgres
+sudo service postgresql start
+sudo -i -u postgres
+psql

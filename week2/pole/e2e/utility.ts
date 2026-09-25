@@ -1,7 +1,7 @@
 import request from "supertest";
-import { app } from "../src/api"
+import { Express } from "express";
 
-export const loginAdminTest = async() => {
+export const loginAdminTest = async(app: Express) => {
         const { body: user} = await request(app)
             .post('/login')
             .send({username: "admin", password: "admin"})
@@ -9,7 +9,7 @@ export const loginAdminTest = async() => {
         return user;
     }
 
-export const loginRepTest = async() => {
+export const loginRepTest = async(app: Express) => {
         const { body: user} = await request(app)
             .post('/login')
             .send({username: "rep", password: "rep"})

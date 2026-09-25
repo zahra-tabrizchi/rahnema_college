@@ -2,17 +2,16 @@ import { User } from "../user/model/user";
 import { ForbiddenError, HttpError, NotFoundError } from "../../utility/http-error";
 import { CreatePlanDto } from "./dto/create-plan.dto";
 import { Plan } from "./model/plan";
-import { PlanRepository } from "./plan.repository";
+import { IPlanRepository } from "./plan.repository";
 import { CreateProgramDto } from "./program/dto/create-program.dto";
 import { Program } from "./program/model/program";
+import { PlanId } from "./model/plan-id";
 
 export class PlanService {
-    private planRepo :PlanRepository
-    constructor() {
-        this.planRepo = new PlanRepository();
-    }
+    
+    constructor(private planRepo: IPlanRepository) {}
 
-    getPlanById(planId: number) {
+    getPlanById(planId: PlanId) {
         const plan = this.planRepo.findById(planId)
         
             if (plan === undefined) {
@@ -22,11 +21,11 @@ export class PlanService {
             return plan
     }
 
-    createPlan(dto: CreatePlanDto, loggedInUser: User): Plan {
+    createPlan(dto: CreatePlanDto, loggedInUser: User): Promise<Plan> {
         const plan = {
         title: dto.title,
         description: dto.description || "",
-        deadLine: dto.deadline,
+        deadline: dto.deadline,
         programs: []
         }
         if(dto.deadline.getTime() < new Date().getTime()) {
@@ -39,9 +38,9 @@ export class PlanService {
         return this.planRepo.create(plan)
         }
 
-    createProgram(dto: CreateProgramDto, user: User): Program {
-        const plan = this.planRepo.findById(dto.planId)
-            if ( plan=== undefined) {
+    async createProgram(dto: CreateProgramDto, user: User): Promise<Plan> {
+        const plan = await this.planRepo.findById(dto.planId)
+            if ( !plan ) {
                 throw new NotFoundError();
             }
         
@@ -68,7 +67,7 @@ export class PlanService {
             return false
         }
     
-        if (plan.deadLine.getTime() < new Date().getTime()) {
+        if (plan.deadline.getTime() < new Date().getTime()) {
             return false
         }
     

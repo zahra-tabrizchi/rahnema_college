@@ -1,9 +1,15 @@
 import express, { ErrorRequestHandler } from "express"
-import { app as planRoutes } from "./routes/plan.route"
-import { app as userRoutes } from "./routes/user.route"
 import { ZodError } from "zod"
+import { makePlanRouter } from "./routes/plan.route"
+import { PlanService } from "./modules/plan/plan.service"
+import { DataSource } from "typeorm"
+import { PlanRepository } from "./modules/plan/plan.repository"
+import { UserRepository } from "./modules/user/user.repository"
+import { UserService } from "./modules/user/user.service"
+import { makeUserRouter } from "./routes/user.route"
 
-export const app = express()
+export const makeApp = (dataSource: DataSource) => {
+const app = express()
 
 app.use(express.json())
 
@@ -14,8 +20,14 @@ if (process.env.NODE_ENV !== "TEST") {
 })
 }
 
-app.use("/plan", planRoutes);
-app.use(userRoutes);
+const planRepo = new PlanRepository(dataSource)
+const planService = new PlanService(planRepo)
+
+const userRepo = new UserRepository(dataSource)
+const userService = new UserService(userRepo)
+
+app.use("/plan", makePlanRouter(planService, userService));
+app.use(makeUserRouter(userService));
 
 
 app.use((req, res) => {
@@ -30,3 +42,5 @@ const errorHandling: ErrorRequestHandler = (error, req, res, next) => {
 }
 
 app.use(errorHandling)
+return app
+}

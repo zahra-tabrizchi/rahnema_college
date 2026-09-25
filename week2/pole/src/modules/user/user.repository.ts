@@ -1,25 +1,29 @@
+import { DataSource, Repository } from "typeorm";
 import { User } from "./model/user";
-import { v4 } from "uuid";
+import { UserEntity } from "./entity/user.entity";
+import { seedUser } from "../../../seed";
+import { UserId } from "./model/user-id";
 
-type UserRole = "Admin" | "Representative" | "Normal"
+type UserRole = "Admin" | "Representative" | "Normal";
 
 export interface CreateUser {
-    username: string,
-    password: string,
-    role: UserRole,
+  username: string;
+  password: string;
+  role: UserRole;
 }
 
 export class UserRepository {
-    private users: User[] = [
-        {id: v4() , username: "admin", password: "admin", role: "Admin"},
-        {id: v4() , username: "rep", password: "rep", role: "Representative"}
-    ]
-   
-    public userLogin(username: string, password: string) {
-        return this.users.find((x) => x.username === username && x.password=== password)
-    }
+  private usersRepo: Repository<UserEntity>;
+  constructor(AppDataSource: DataSource) {
+    this.usersRepo = AppDataSource.getRepository(UserEntity);
+    seedUser();
+  }
 
-    public findById(userId: string) {
-        return this.users.find((user) => user.id ===userId)
-    }
+  public findByUsername(username: string): Promise<User | null> {
+    return this.usersRepo.findOneBy({ username });
+  }
+
+  public findById(userId: UserId) {
+    return this.usersRepo.findOneBy({ id: userId });
+  }
 }

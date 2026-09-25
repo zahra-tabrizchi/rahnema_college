@@ -1,10 +1,22 @@
+import { Express } from "express";
 import request from "supertest"
-import { app } from "../src/api"
 import { title } from "process"
 import { loginAdminTest, loginRepTest } from "./utility";
+import { AppDataSource } from "../src/data-source";
+import { seedUser } from "../seed";
+import { makeApp } from "../src/api";
 
 
 describe("Plan", () => {
+    let app: Express;
+    beforeAll(async() => {
+            const dataSource = await AppDataSource.initialize()
+            app = makeApp(dataSource)
+        })
+    
+        afterAll(async() => {
+            await AppDataSource.destroy()
+        })
 
     describe("create", () => {
         it("should fail if we do not log in",  async() => {
@@ -12,7 +24,7 @@ describe("Plan", () => {
         })
 
         it("should fail if user is not admin", async() => {
-            const user = await loginRepTest();
+            const user = await loginRepTest(app);
             const today = new Date()
             const tomorrow = new Date(today.setDate(today.getDate()+1))
             const { body: plan } = await request(app)
@@ -21,13 +33,13 @@ describe("Plan", () => {
             .send({
                 title: "local Host",
                 description: "there is no place like",
-                deadline: tomorrow
+                deadline: tomorrow.toISOString()
             })
             .expect(403)
         })
 
         it("should create a plan if we are logged in", async() => {
-            const user  = await loginAdminTest();
+            const user  = await loginAdminTest(app);
             
             const today = new Date()
             const tomorrow = new Date(today.setDate(today.getDate()+1))
@@ -38,7 +50,7 @@ describe("Plan", () => {
             .send({
                 title: "local host",
                 description: "there is no place like",
-                deadline: tomorrow
+                deadline: tomorrow.toISOString()
             })
             .expect(200)
             console.log("Returned plan:", plan);
@@ -47,7 +59,7 @@ describe("Plan", () => {
         })
 
         it("should send bad request if title is not provided", async() => {
-            const user  = await loginAdminTest()
+            const user  = await loginAdminTest(app)
             const today = new Date()
             const tomorrow = new Date(today.setDate(today.getDate()+1))
 
@@ -57,7 +69,7 @@ describe("Plan", () => {
             .send({
                 title: "",
                 description: "there is no place like",
-                deadline: tomorrow
+                deadline: tomorrow.toISOString()
             })
             .expect(400)
         })
@@ -65,7 +77,7 @@ describe("Plan", () => {
 
     describe("Read", () => {
         it("should read the plan", async() => {
-            const user = await loginAdminTest()
+            const user = await loginAdminTest(app)
             const today = new Date()
             const tomorrow = new Date(today.setDate(today.getDate()+1))
 
@@ -75,7 +87,7 @@ describe("Plan", () => {
             .send({
                 title: "local host",
                 description: "there is no place like",
-                deadline: tomorrow
+                deadline: tomorrow.toISOString()
             })
             .expect(200)
 

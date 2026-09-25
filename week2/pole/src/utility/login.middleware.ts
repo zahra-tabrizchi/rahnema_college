@@ -1,22 +1,25 @@
-import { NextFunction, Request, Response } from "express"
-import { userService } from "../dependency";
+import { NextFunction, Request, Response } from "express";
 import { HttpError } from "../utility/http-error";
+import { UserService } from "../modules/user/user.service";
+import { zodUserId } from "../modules/user/model/user-id";
 
-export const loginMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.headers["authorization"]
-    
+export const loginMiddleware =
+  (userService: UserService) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.headers["authorization"];
+
     if (!userId || typeof userId !== "string") {
-        return res.status(401).send({ message: "unauthorized" });
+      return res.status(401).send({ message: "Unauthorized" });
     }
 
-    try {
-        const user = userService.getUserById(userId);
-        req.user = user; // if you've extended Request type
-        next();
-    } catch (error) {
-        if (error instanceof HttpError) {
-            return res.status(error.status).send({ message: error.message });
-        }
-        return res.status(500).send({ message: "Internal server error" });
+    const loggedInUser = await userService.findById(zodUserId.parse(userId));
+
+    if (!loggedInUser) {
+      res.status(401).send({ message: "Unauthorized" });
+      return;
     }
-}
+
+    req.user = loggedInUser;
+
+    next();
+  };

@@ -1,12 +1,23 @@
 import request from "supertest";
-import { app } from "../src/api"
+import { Express } from "express";
 import { loginAdminTest, loginRepTest } from "./utility";
+import { AppDataSource } from "../src/data-source";
+import { makeApp } from "../src/api";
 
 describe("Program", () => {
-    
+    let app : Express
+    beforeAll(async() => {
+        const dataSource = await AppDataSource.initialize()
+        app = makeApp(dataSource)
+    })
+
+    afterAll(async() => {
+        await AppDataSource.destroy()
+    })
+
     describe("Create", () => {
         it("Should fail if we did not login", async() => {
-            const AdminUser = await loginAdminTest()
+            const AdminUser = await loginAdminTest(app)
 
             const today = new Date()
             const tomorrow = new Date(today.setDate(today.getDate()+1))
@@ -16,15 +27,15 @@ describe("Program", () => {
             .send({
                 title: "local Host",
                 description: "there is no place like",
-                deadline: tomorrow
+                deadline: tomorrow.toISOString()
             })
             .expect(200)
             await request(app).post(`/plan/${plan.id}/program`).expect(401);
         })
 
         it("Should create a program", async()=> {
-            const AdminUser = await loginAdminTest()
-            const RepUser = await loginRepTest()
+            const AdminUser = await loginAdminTest(app)
+            const RepUser = await loginRepTest(app)
             
             const today = new Date()
             const tomorrow = new Date(today.setDate(today.getDate()+1))
@@ -34,7 +45,7 @@ describe("Program", () => {
             .send({
                 title: "local Host",
                 description: "there is no place like",
-                deadline: tomorrow
+                deadline: tomorrow.toISOString()
             })
             .expect(200)
 
@@ -51,7 +62,7 @@ describe("Program", () => {
         })
 
         it.skip("Should fail if deadline is exceeded", async() => {
-            const user = await loginAdminTest()
+            const user = await loginAdminTest(app)
             
             const today = new Date()
             const yesterday = new Date(today.setDate(today.getDate()-1))
@@ -61,7 +72,7 @@ describe("Program", () => {
             .send({
                 title: "127.0.0.1",
                 description: "there is no place like",
-                deadLine: yesterday
+                deadLine: yesterday.toISOString()
             })
             .expect(200)
 
